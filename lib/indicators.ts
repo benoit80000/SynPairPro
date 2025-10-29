@@ -1,4 +1,3 @@
-// lib/indicators.ts
 export function ema(values: number[], period: number): number | undefined {
   if (!values?.length || period <= 0) return;
   const k = 2 / (period + 1);
@@ -34,11 +33,7 @@ export function bollinger(values: number[], period = 20, mult = 2): { mid?: numb
   const win = values.slice(-period);
   const mid = win.reduce((a, b) => a + b, 0) / win.length;
   const s = std(win);
-  return {
-    mid,
-    upper: s !== undefined ? mid + mult * s : undefined,
-    lower: s !== undefined ? mid - mult * s : undefined,
-  };
+  return { mid, upper: s !== undefined ? mid + mult * s : undefined, lower: s !== undefined ? mid - mult * s : undefined };
 }
 export function zscore(values: number[], period = 30): number | undefined {
   if (!values || values.length < period) return;
@@ -47,13 +42,4 @@ export function zscore(values: number[], period = 30): number | undefined {
   const s = std(last);
   if (!s || s === 0) return;
   return (last[last.length - 1] - m) / s;
-}
-export function computeAll(prices: number[]) {
-  const EMA20 = ema(prices.slice(-100), 20);
-  const EMA60 = ema(prices.slice(-300), 60);
-  const RSI14 = rsi(prices.slice(-200), 14);
-  const bb = bollinger(prices, 20, 2);
-  const sigma30 = std(prices.slice(-30));
-  const z30 = zscore(prices, 30);
-  return { ema20: EMA20, ema60: EMA60, rsi14: RSI14, bollinger: bb, sigma30, z30 };
 }

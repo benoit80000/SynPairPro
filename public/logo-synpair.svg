@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="128" viewBox="0 0 512 128">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7B61FF"/>
+      <stop offset="100%" stop-color="#00FFFF"/>
+    </linearGradient>
+  </defs>
+  <rect fill="none" width="512" height="128" rx="16"/>
+  <g transform="translate(16,16)">
+    <rect x="0" y="0" width="96" height="96" rx="20" fill="url(#g)" opacity="0.15"/>
+    <path d="M20,68c10,10 46,10 56,0c6-6 6-16 0-22c-8-8 -32-8 -40,0" stroke="url(#g)" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M36,28c14-8 38-6 48,4" stroke="url(#g)" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="76" cy="32" r="4" fill="url(#g)"/>
+  </g>
+  <g transform="translate(128,30)">
+    <text x="0" y="36" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="40" font-weight="800" fill="white" letter-spacing="0.5">
+      SynPair <tspan fill="url(#g)">Pro</tspan>
+    </text>
+    <text x="0" y="68" font-family="Inter, system-ui" font-size="16" fill="#B6C3D1">Monitoring • Ratios • AI Insights</text>
+  </g>
+</svg>

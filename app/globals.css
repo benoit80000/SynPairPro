@@ -1,22 +1,12 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root{
-  --bg:#05080f; --card:rgba(14,22,34,.7); --stroke:rgba(120,130,255,.18);
-  --text:#e9eef7; --muted:#9fb0c9; --a:#6ae3ff; --b:#7d5bff; --ok:#22c55e; --err:#ef4444;
-}
-html { color-scheme: dark; }
-body { @apply bg-[#05080f] text-[var(--text)] antialiased; }
-.card { @apply bg-[rgba(14,22,34,.7)] border border-[rgba(120,130,255,.18)] rounded-2xl p-5 shadow-xl backdrop-blur; }
-.badge { @apply text-xs px-2.5 py-1 rounded-full border border-[rgba(120,130,255,.18)] text-[var(--muted)] bg-white/5; }
-.input, .select { @apply w-full rounded-xl border border-[rgba(120,130,255,.18)] bg-black/40 px-3 py-2 text-sm outline-none focus:border-brandA; }
-.button { @apply inline-flex items-center gap-2 font-extrabold rounded-xl px-4 py-2 text-black bg-gradient-to-r from-brandA to-brandB shadow-lg; }
-.small { @apply text-xs text-[var(--muted)]; }
-.link { @apply text-brandA underline; }
-.light body { color-scheme: light; }
-.light body { @apply bg-white text-slate-900; }
-.light .card { @apply bg-white/80 border-slate-200; }
-.light .badge { @apply border-slate-200 text-slate-500 bg-slate-50; }
-.light .input, .light .select { @apply border-slate-200 bg-white; }
-.light .button { @apply text-white bg-gradient-to-r from-indigo-500 to-fuchsia-500; }
+:root { color-scheme: dark; }
+html, body { @apply bg-[#0b0f19] text-white min-h-screen; }
+main { @apply max-w-7xl mx-auto; }
+.card { @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 shadow-xl; }
+.badge { @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm bg-white/10 border border-white/10; }
+.button { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-[#7B61FF] to-[#00FFFF] text-black shadow-2xl; }
+.input { @apply px-3 py-2 rounded-xl bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#7B61FF]/50; }
+.select { @apply px-3 py-2 rounded-xl bg-white/10 border border-white/10; }
+h1,h2,h3 { letter-spacing: .2px; }

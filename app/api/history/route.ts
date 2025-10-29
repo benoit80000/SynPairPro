@@ -1,24 +1,16 @@
-// app/api/history/route.ts
 import { NextResponse } from 'next/server';
-import { computeAll } from '@/lib/indicators';
+import { ema, rsi, bollinger, std, zscore } from '@/lib/indicators';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/history?source=binance&id=PYTHUSDT&interval=1m&limit=120
- * GET /api/history?source=coingecko&id=pyth-network&days=1
- * Returns { prices: number[], indicators: {...}, ts: number }
- */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const source = (searchParams.get('source') || 'binance') as 'binance'|'coingecko';
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-
   try {
     let prices: number[] = [];
-
     if (source === 'binance') {
       const interval = searchParams.get('interval') || '1m';
       const limit = Math.min(Number(searchParams.get('limit') || '180'), 1000);
@@ -26,9 +18,8 @@ export async function GET(req: Request) {
       const r = await fetch(url, { cache: 'no-store' });
       if (!r.ok) throw new Error(await r.text());
       const j = await r.json();
-      prices = j.map((x: any[]) => Number(x[4])).filter((n:number)=>Number.isFinite(n)); // close
+      prices = j.map((x: any[]) => Number(x[4])).filter((n:number)=>Number.isFinite(n));
     } else {
-      // CoinGecko: market_chart returns prices [ [ts, price], ... ]
       const days = searchParams.get('days') || '1';
       const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(id)}/market_chart?vs_currency=usd&days=${days}`;
       const r = await fetch(url, { cache: 'no-store' });
@@ -36,9 +27,15 @@ export async function GET(req: Request) {
       const j = await r.json();
       prices = (j?.prices || []).map((p: any[]) => Number(p[1])).filter((n:number)=>Number.isFinite(n));
     }
-
     if (prices.length < 2) return NextResponse.json({ error: 'No prices' }, { status: 404 });
-    const indicators = computeAll(prices);
+    const indicators = {
+      ema20: ema(prices.slice(-100), 20),
+      ema60: ema(prices.slice(-300), 60),
+      rsi14: rsi(prices.slice(-200), 14),
+      bollinger: bollinger(prices, 20, 2),
+      sigma30: std(prices.slice(-30)),
+      z30: zscore(prices, 30)
+    };
     return NextResponse.json({ prices, indicators, ts: Date.now() });
   } catch (e:any) {
     return NextResponse.json({ error: e?.message || 'fetch error' }, { status: 500 });
