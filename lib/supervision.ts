@@ -1,6 +1,5 @@
 "use client";
 
-
 type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
 
 export type IndicatorPack = {

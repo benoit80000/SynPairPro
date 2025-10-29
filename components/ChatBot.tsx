@@ -1,7 +1,6 @@
 "use client";
-
 import React, { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, ChevronDown } from 'lucide-react';
 
 export default function ChatBot(){
   const [open, setOpen] = useState(false);
@@ -30,12 +29,12 @@ export default function ChatBot(){
       <MessageCircle />
     </button>
     {open && (
-      <div className="fixed bottom-20 right-4 w-[360px] max-w-[95vw] card">
+      <div className="fixed bottom-20 right-4 w-[420px] max-w-[95vw] card">
         <div className="flex items-center justify-between mb-2">
           <div className="font-extrabold">MyAiTraderBot</div>
-          <button className="badge" onClick={()=>setOpen(false)}>Fermer</button>
+          <button className="badge" onClick={()=>setOpen(false)} title="Masquer">Fermer</button>
         </div>
-        <div className="max-h-[50vh] overflow-auto space-y-2">
+        <div className="max-h-[60vh] overflow-auto space-y-2">
           {history.map((m,i)=>(
             <div key={i} className={m.role==='user'?'text-right':''}>
               <div className={'inline-block rounded-2xl px-3 py-2 ' + (m.role==='user'?'bg-white/20':'bg-black/30')}>{m.text}</div>

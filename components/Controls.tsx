@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { getIntervalMs, getSource, setIntervalMs, setSource } from "@/lib/supervision";
 type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";

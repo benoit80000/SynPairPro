@@ -1,14 +1,11 @@
 {
   "name": "synpair-pro-v3",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:binance": "node scripts/test-binance.mjs",
-    "test:coingecko": "node scripts/test-coingecko.mjs",
-    "test:ai": "node scripts/ping-ai.mjs",
     "postinstall": "next telemetry disable || true"
   },
   "dependencies": {

@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useRef, useState } from "react";
 import { loadTokens, saveTokens, resetTokens, TokenItem } from "@/lib/tokens";
 
@@ -91,34 +90,13 @@ export default function TokenManager() {
         <input className="input font-mono" placeholder="Binance (ex: LINKUSDT)" value={form.binance_symbol} onChange={e=>setForm({...form, binance_symbol:e.target.value.toUpperCase()})}/>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button onClick={handleAdd} className="button">➕ Ajouter</button>
-        <button onClick={()=>window.dispatchEvent(new CustomEvent('synpair:refresh'))} className="badge">🔄 Rafraîchir</button>
-        <button onClick={handleReset} className="badge">🧹 Réinitialiser</button>
-        <button onClick={exportTokens} className="badge">⬇️ Export tokens</button>
-        <button onClick={exportState} className="badge">⬇️ Export analyses</button>
+        <button onClick={handleAdd} className="button" title="Ajoute le token à la liste de supervision">➕ Ajouter</button>
+        <button onClick={()=>window.dispatchEvent(new CustomEvent('synpair:refresh'))} className="badge" title="Force un rafraîchissement immédiat">🔄 Rafraîchir</button>
+        <button onClick={handleReset} className="badge" title="Revenir aux tokens par défaut">🧹 Réinitialiser</button>
+        <button onClick={exportTokens} className="badge" title="Exporter la liste au format JSON">⬇️ Export tokens</button>
+        <button onClick={exportState} className="badge" title="Exporter l'état courant des analyses">⬇️ Export analyses</button>
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={(e)=>{ const f=e.target.files?.[0]; if(f) importTokens(f); (e.target as any).value=''; }} />
-        <button onClick={()=>fileRef.current?.click()} className="badge">⬆️ Import tokens</button>
-      </div>
-
-      <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead className="bg-white/5 text-left text-white/70">
-            <tr><th className="px-3 py-2">Symbole</th><th className="px-3 py-2">Nom</th><th className="px-3 py-2">Binance</th><th className="px-3 py-2 text-center">Actions</th></tr>
-          </thead>
-          <tbody>
-            {tokens.map(t => (
-              <tr key={t.binance_symbol} className="border-t border-white/10">
-                <td className="px-3 py-2">{t.symbol}</td>
-                <td className="px-3 py-2">{t.name}</td>
-                <td className="px-3 py-2 font-mono">{t.binance_symbol}</td>
-                <td className="px-3 py-2 text-center">
-                  <button onClick={()=>handleDelete(t.binance_symbol)} className="rounded-full bg-red-600/80 px-3 py-1 text-white hover:bg-red-600">🗑️ Supprimer</button>
-                </td>
-              </tr>
-            ))}
-            {tokens.length===0 && <tr><td colSpan={4} className="px-3 py-4 text-center text-white/60">Aucun token. Ajoute une paire ci-dessus.</td></tr>}
-          </tbody>
-        </table>
+        <button onClick={()=>fileRef.current?.click()} className="badge" title="Importer une liste JSON">⬆️ Import tokens</button>
       </div>
     </div>
   );

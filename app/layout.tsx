@@ -1,4 +1,4 @@
-export const metadata = { title: "SynPair Pro", description: "Moniteur de paires synthétiques & supervision multi-sources" };
+export const metadata = { title: "SynPair Pro", description: "Supervision multi-sources & signaux" };
 import "./globals.css";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
