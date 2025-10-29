@@ -1,5 +1,6 @@
 "use client";
 
+
 type Source = "binance" | "coingecko";
 
 export type IndicatorPack = {
@@ -63,7 +64,7 @@ async function fetchPack(row: { source: Source; binance_symbol?: string; coingec
 }
 
 export function superviseTokens(tokens: { symbol: string; name: string; binance_symbol: string; coingecko_id?: string }[], onUpdate: (s: SupervisionState)=>void) {
-  let disposed = False as any;
+  let disposed = false;
   let timer: any = null;
 
   const source: Source = getSource();
@@ -111,7 +112,7 @@ export function superviseTokens(tokens: { symbol: string; name: string; binance_
   startLoop();
 
   return {
-    stop() { disposed = true as any; clearTimer(); },
+    stop() { disposed = true; clearTimer(); },
     forceOnce() { cycle().catch(()=>{}); },
     setInterval(ms: number) { setIntervalMs(ms); clearTimer(); timer = setInterval(cycle, ms); }
   };
