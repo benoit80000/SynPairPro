@@ -1,26 +1,72 @@
 import { NextResponse } from 'next/server';
-export const runtime = 'edge';
 
-const MODELS = ['gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo'];
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request){
-  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-  if(!apiKey) return NextResponse.json({ error: 'Missing OPENAI_API_KEY' }, { status: 400 });
-  const body = await req.json().catch(()=>({messages:[]}));
-  const messages = Array.isArray(body.messages) ? body.messages : [];
-  const sys = { role:'system', content: 'Tu es MyAiTraderBot, un expert trader/market maker. Réponds en français, ton calme et analytique, utile pour la prise de décision. Donne des lectures des indicateurs (EMA, RSI, Bollinger) de manière courte et exploitable.' };
-  for (const model of MODELS){
-    try{
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method:'POST',
-        headers:{ 'content-type':'application/json', 'authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages: [sys, ...messages].slice(-20), temperature: 0.3 })
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error?.message || 'OpenAI error');
-      const reply = j?.choices?.[0]?.message?.content || '';
-      return NextResponse.json({ reply, model });
-    }catch(e){ /* try next */ }
+const SYSTEM_PROMPT = `
+Tu es MyAiTraderBot, un assistant d’analyse marché crypto (trader/market maker).
+Réponds en français, de manière concise et actionnable.
+Rôle :
+- Lire et interpréter des indicateurs (EMA20, EMA60, RSI14, Bollinger(20,2), σ(30), Z-score(30)).
+- Produire :
+  1. Un résumé court (1–2 phrases)
+  2. Un signal {LONG|SHORT|NEUTRE}
+  3. 2–4 raisons chiffrées basées sur les indicateurs
+  4. Une suggestion de gestion du risque (stop, taille %)
+  5. Une remarque éventuelle sur l’arbitrage inter-exchange.
+Contraintes :
+- Si les données sont incomplètes, demande ce qu’il manque sans inventer.
+- Mentionne la source (Binance / CoinGecko) si donnée.
+- Termine toujours par : "⚠ Ceci n’est pas un conseil financier."
+Ton : calme, analytique, factuel. Longueur max ~250 tokens.
+`;
+
+export async function POST(req: Request) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'Clé API OpenAI manquante. Configure OPENAI_API_KEY sur Vercel.' },
+      { status: 400 }
+    );
   }
-  return NextResponse.json({ error: 'All OpenAI models failed' }, { status: 502 });
+
+  try {
+    const body = await req.json();
+    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const sys = { role: 'system', content: SYSTEM_PROMPT };
+
+    const payload = {
+      model: 'gpt-4-turbo', // tu peux mettre gpt-3.5-turbo si besoin
+      messages: [sys, ...messages].slice(-20),
+      temperature: 0.3,
+      max_tokens: 400,
+    };
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const j = await res.json();
+
+    if (!res.ok) {
+      console.error('Erreur OpenAI:', j);
+      return NextResponse.json(
+        { error: j.error?.message || 'Erreur API OpenAI.' },
+        { status: res.status }
+      );
+    }
+
+    const reply = j.choices?.[0]?.message?.content || '(Réponse vide)';
+    return NextResponse.json({ reply });
+  } catch (e: any) {
+    console.error('Erreur serveur:', e);
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur AI: ' + e.message },
+      { status: 500 }
+    );
+  }
 }
