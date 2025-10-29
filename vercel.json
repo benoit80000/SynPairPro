@@ -1,3 +1,0 @@
-{
-  "functions": { "app/api/**/route.ts": { "runtime": "edge" } }
-}
