@@ -43,3 +43,38 @@ export function zscore(values: number[], period = 30): number | undefined {
   if (!s || s === 0) return;
   return (last[last.length - 1] - m) / s;
 }
+
+// --- NEW: simple signal engine
+export type Signal = 'buy' | 'neutral' | 'sell';
+export function deriveSignal(opts: {
+  price?: number;
+  ema20?: number;
+  ema60?: number;
+  rsi14?: number;
+  bb?: { mid?: number; upper?: number; lower?: number };
+  z30?: number;
+}): Signal {
+  const { price, ema20, ema60, rsi14, bb, z30 } = opts || {};
+  let score = 0;
+  if (typeof rsi14 === 'number') {
+    if (rsi14 < 35) score += 1;
+    if (rsi14 > 65) score -= 1;
+  }
+  if (typeof price === 'number' && typeof ema20 === 'number') {
+    if (price > ema20) score += 0.5; else score -= 0.5;
+  }
+  if (typeof ema20 === 'number' && typeof ema60 === 'number') {
+    if (ema20 > ema60) score += 0.5; else score -= 0.5;
+  }
+  if (typeof z30 === 'number') {
+    if (z30 < -1) score += 0.5;
+    if (z30 >  1) score -= 0.5;
+  }
+  if (bb && typeof price === 'number' && typeof bb.lower === 'number' && typeof bb.upper === 'number') {
+    if (price <= bb.lower) score += 0.5;
+    if (price >= bb.upper) score -= 0.5;
+  }
+  if (score >= 1.25) return 'buy';
+  if (score <= -1.25) return 'sell';
+  return 'neutral';
+}
