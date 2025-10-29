@@ -3,11 +3,13 @@ export interface TokenItem {
   name: string;
   binance_symbol: string;
   coingecko_id?: string;
+  coinpaprika_id?: string;
+  coincap_id?: string;
 }
 const DEFAULT_TOKENS: TokenItem[] = [
-  { symbol: "BTC", name: "Bitcoin", binance_symbol: "BTCUSDT" },
-  { symbol: "ETH", name: "Ethereum", binance_symbol: "ETHUSDT" },
-  { symbol: "LINK", name: "Chainlink", binance_symbol: "LINKUSDT" },
+  { symbol: "BTC", name: "Bitcoin", binance_symbol: "BTCUSDT", coincap_id: "bitcoin", coinpaprika_id: "btc-bitcoin", coingecko_id: "bitcoin" },
+  { symbol: "ETH", name: "Ethereum", binance_symbol: "ETHUSDT", coincap_id: "ethereum", coinpaprika_id: "eth-ethereum", coingecko_id: "ethereum" },
+  { symbol: "LINK", name: "Chainlink", binance_symbol: "LINKUSDT", coincap_id: "chainlink", coinpaprika_id: "link-chainlink", coingecko_id: "chainlink" },
 ];
 const STORAGE_KEY = "synpair_tokens";
 export function loadTokens(): TokenItem[] {

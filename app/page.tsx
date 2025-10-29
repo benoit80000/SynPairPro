@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import Controls from "@/components/Controls";
 import TokenManager from "@/components/TokenManager";
@@ -19,7 +20,7 @@ export default function Page() {
     if (!tokens.length) return;
     stopRef.current?.stop?.();
     stopRef.current = superviseTokens(
-      tokens.map((t) => ({ symbol: t.symbol, name: t.name, binance_symbol: t.binance_symbol, coingecko_id: t.coingecko_id })),
+      tokens.map((t) => ({ symbol: t.symbol, name: t.name, binance_symbol: t.binance_symbol, coingecko_id: t.coingecko_id, coinpaprika_id: t.coinpaprika_id, coincap_id: t.coincap_id })),
       (s) => setState(s)
     ) as any;
     const onRefresh = () => stopRef.current?.forceOnce?.();
@@ -29,11 +30,11 @@ export default function Page() {
 
   return (
     <main className="min-h-screen p-6 text-white">
-      <h1 className="mb-4 text-3xl font-extrabold">Supervision</h1>
-      <Controls onChange={({ intervalMs }) => { stopRef.current?.setInterval(intervalMs); }} />
-      <div className="mb-4">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-extrabold">SynPair Pro</h1>
         <button onClick={()=>stopRef.current?.forceOnce?.()} className="badge">🔄 Rafraîchir maintenant</button>
       </div>
+      <Controls onChange={({ intervalMs }) => { stopRef.current?.setInterval(intervalMs); }} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {Object.values(state).map((r) => {
           const sig = deriveSignal({

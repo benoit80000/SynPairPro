@@ -1,7 +1,7 @@
 "use client";
 
 
-type Source = "binance" | "coingecko";
+type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
 
 export type IndicatorPack = {
   ema20?: number;
@@ -20,6 +20,8 @@ export type SupervisionRow = {
   ts?: number;
   binance_symbol?: string;
   coingecko_id?: string;
+  coinpaprika_id?: string;
+  coincap_id?: string;
   error?: string;
 };
 
@@ -33,7 +35,8 @@ declare global {
 
 export function getSource(): Source {
   const s = (typeof window !== "undefined" && localStorage.getItem("source")) || "binance";
-  return s === "coingecko" ? "coingecko" : "binance";
+  if (s === "coingecko" || s === "coinpaprika" || s === "coincap") return s as any;
+  return "binance";
 }
 export function setSource(s: Source) { if (typeof window !== "undefined") localStorage.setItem("source", s); }
 export function getIntervalMs(): number {
@@ -43,7 +46,7 @@ export function getIntervalMs(): number {
 }
 export function setIntervalMs(ms: number) { if (typeof window !== "undefined") localStorage.setItem("poll_interval_ms", String(ms)); }
 
-async function fetchPack(row: { source: Source; binance_symbol?: string; coingecko_id?: string }) {
+async function fetchPack(row: { source: Source; binance_symbol?: string; coingecko_id?: string; coinpaprika_id?: string; coincap_id?: string }) {
   if (row.source === "binance" && row.binance_symbol) {
     const url = `/api/history?source=binance&id=${encodeURIComponent(row.binance_symbol)}&interval=1m&limit=180`;
     const r = await fetch(url, { cache: "no-store" });
@@ -60,10 +63,26 @@ async function fetchPack(row: { source: Source; binance_symbol?: string; coingec
     const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
     return { price, indicators: j?.indicators, ts: Date.now() };
   }
+  if (row.source === "coinpaprika" && row.coinpaprika_id) {
+    const url = `/api/history?source=coinpaprika&id=${encodeURIComponent(row.coinpaprika_id)}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
+    return { price, indicators: j?.indicators, ts: Date.now() };
+  }
+  if (row.source === "coincap" && row.coincap_id) {
+    const url = `/api/history?source=coincap&id=${encodeURIComponent(row.coincap_id)}`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
+    return { price, indicators: j?.indicators, ts: Date.now() };
+  }
   throw new Error("identifiant manquant pour la source");
 }
 
-export function superviseTokens(tokens: { symbol: string; name: string; binance_symbol: string; coingecko_id?: string }[], onUpdate: (s: SupervisionState)=>void) {
+export function superviseTokens(tokens: { symbol: string; name: string; binance_symbol: string; coingecko_id?: string; coinpaprika_id?: string; coincap_id?: string }[], onUpdate: (s: SupervisionState)=>void) {
   let disposed = false;
   let timer: any = null;
 
@@ -77,6 +96,8 @@ export function superviseTokens(tokens: { symbol: string; name: string; binance_
       source,
       binance_symbol: t.binance_symbol,
       coingecko_id: t.coingecko_id,
+      coinpaprika_id: t.coinpaprika_id,
+      coincap_id: t.coincap_id,
     };
   });
   push();

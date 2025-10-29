@@ -1,12 +1,12 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root { color-scheme: dark; }
-html, body { @apply bg-[#0b0f19] text-white min-h-screen; }
-main { @apply max-w-7xl mx-auto; }
-.card { @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 shadow-xl; }
-.badge { @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm bg-white/10 border border-white/10; }
-.button { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-[#7B61FF] to-[#00FFFF] text-black shadow-2xl; }
-.input { @apply px-3 py-2 rounded-xl bg-white/10 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#7B61FF]/50; }
-.select { @apply px-3 py-2 rounded-xl bg-white/10 border border-white/10; }
-h1,h2,h3 { letter-spacing: .2px; }
+body { @apply bg-[#0a0b0f] text-white; }
+
+.input { @apply rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none placeholder-white/40; }
+.button { @apply rounded-xl bg-gradient-to-r from-brandA to-brandB px-4 py-2 font-semibold text-black shadow; }
+.badge { @apply rounded-xl border border-white/10 bg-white/10 px-3 py-1; }
+.card { @apply rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur; }

@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+
+import React, { useEffect, useRef, useState } from "react";
 import { loadTokens, saveTokens, resetTokens, TokenItem } from "@/lib/tokens";
 
 type SearchItem = { source:string; symbol?:string; base?:string; quote?:string; id?:string };
@@ -19,22 +20,25 @@ export default function TokenManager() {
     } catch {}
   })(); }, [q]);
 
+  const [form, setForm] = useState<TokenItem>({ symbol: "", name: "", binance_symbol: "" });
+
   function pickSuggestion(s: SearchItem){
     if (s.source==='binance' && s.symbol && s.base) {
       setForm({ symbol: s.base, name: s.base, binance_symbol: s.symbol });
-    } else if (s.source!=='binance' && s.symbol) {
-      setForm({ symbol: s.symbol, name: s.symbol, binance_symbol: `${s.symbol}USDT` });
+    } else if (s.source==='coinpaprika' && s.id && s.symbol) {
+      setForm({ symbol: s.symbol, name: s.symbol, binance_symbol: `${s.symbol}USDT`, coinpaprika_id: s.id });
+    } else if (s.source==='coincap' && s.id && s.symbol) {
+      setForm({ symbol: s.symbol, name: s.symbol, binance_symbol: `${s.symbol}USDT`, coincap_id: s.id });
+    } else {
+      setForm({ symbol: s.symbol || "", name: s.symbol || "", binance_symbol: (s.symbol || '') + 'USDT' });
     }
   }
-
-  const [form, setForm] = useState<TokenItem>({ symbol: "", name: "", binance_symbol: "" });
 
   function handleAdd() {
     if (!form.binance_symbol) return alert("Sélectionne ou saisis un symbole Binance (…USDT).");
     const newList = [...tokens.filter(t => t.binance_symbol !== form.binance_symbol), { ...form, symbol: form.symbol.toUpperCase() }]
       .sort((a, b) => a.symbol.localeCompare(b.symbol));
     setTokens(newList); saveTokens(newList);
-    // reset form & trigger a refresh event for live data
     setForm({ symbol: "", name: "", binance_symbol: "" }); setQ("");
     window.dispatchEvent(new CustomEvent('synpair:refresh'));
   }
@@ -42,7 +46,6 @@ export default function TokenManager() {
   function handleDelete(binance_symbol: string) { const newList = tokens.filter(t => t.binance_symbol !== binance_symbol); setTokens(newList); saveTokens(newList); }
   function handleReset() { resetTokens(); setTokens(loadTokens()); window.dispatchEvent(new CustomEvent('synpair:refresh')); }
 
-  // Export / Import
   function exportTokens() {
     const blob = new Blob([JSON.stringify(tokens, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -71,7 +74,7 @@ export default function TokenManager() {
     <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
       <h2 className="mb-2 text-2xl font-bold">⚙️ Gestion des Tokens</h2>
       <div className="mb-3">
-        <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Rechercher (Binance + autres sources publiques)…" className="input w-full"/>
+        <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Rechercher (Binance + CoinPaprika + CoinCap)…" className="input w-full"/>
         <div className="mt-2 max-h-44 overflow-auto rounded-xl border border-white/10 bg-black/30">
           {items.map((s, i)=> (
             <button key={i} onClick={()=>pickSuggestion(s)} className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/10">

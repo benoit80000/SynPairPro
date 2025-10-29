@@ -13,17 +13,14 @@ export async function GET(req: Request) {
   const q = (searchParams.get('q') || '').trim().toUpperCase();
   try {
     const tasks = [
-      // Binance
       fetchJSON('https://api.binance.com/api/v3/exchangeInfo').then((j) => {
         const list = (j?.symbols || []).filter((s: any)=>s.status==='TRADING' && s.quoteAsset==='USDT')
           .map((s:any)=>({ source:'binance', symbol: s.symbol, base: s.baseAsset, quote: s.quoteAsset }));
         return list;
       }),
-      // CoinPaprika (symbols)
       fetchJSON('https://api.coinpaprika.com/v1/tickers').then((arr:any[])=>{
         return arr.slice(0,5000).map((x:any)=>({ source:'coinpaprika', symbol: (x.symbol||'').toUpperCase(), id: x.id }));
       }).catch(()=>[]),
-      // CoinCap (assets)
       fetchJSON('https://api.coincap.io/v2/assets?limit=2000').then((j:any)=>{
         return (j?.data||[]).map((x:any)=>({ source:'coincap', symbol: (x.symbol||'').toUpperCase(), id: x.id }));
       }).catch(()=>[]),

@@ -43,8 +43,6 @@ export function zscore(values: number[], period = 30): number | undefined {
   if (!s || s === 0) return;
   return (last[last.length - 1] - m) / s;
 }
-
-// --- NEW: simple signal engine
 export type Signal = 'buy' | 'neutral' | 'sell';
 export function deriveSignal(opts: {
   price?: number;
