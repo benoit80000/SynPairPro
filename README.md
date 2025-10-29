@@ -3,3 +3,8 @@ Voir le README détaillé dans la conversation précédente. Instructions rapide
 - `npm install` puis `npm run dev`
 - Déployez sur Vercel (Next.js 14 détecté automatiquement)
 - Ajoutez `OPENAI_API_KEY` et optionnellement `COINGECKO_API_KEY`
+
+
+### Pages
+- `/` : Dashboard principal
+- `/health` : Statut des APIs (latence Binance / CoinGecko / OpenAI) + endpoint JSON `/api/metrics`

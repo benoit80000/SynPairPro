@@ -1,4 +1,6 @@
 'use client';
+export const dynamic = 'force-dynamic';
+
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import ThemeSwitch from '../components/ThemeSwitch';
@@ -13,17 +15,30 @@ type T = { name:string; symbol:string; binance_symbol?:string; coingecko_id?:str
 const ALL: T[] = (tokens as any).tokens;
 
 export default function Page(){
-  const [source, setSource] = useState<'binance'|'coingecko'>(()=> (localStorage.getItem('source') as any) || 'binance');
-  const [refreshMs, setRefreshMs] = useState<number>(()=> Number(localStorage.getItem('refresh') || 5000));
-  const [view, setView] = useState<'grid'|'list'>(()=> (localStorage.getItem('view') as any) || 'grid');
+  const [source, setSource] = useState<'binance'|'coingecko'>('binance');
+  const [refreshMs, setRefreshMs] = useState<number>(5000);
+  const [view, setView] = useState<'grid'|'list'>('grid');
   const [sel, setSel] = useState<string>('');
-  const [watch, setWatch] = useState<string[]>(()=>{ try{ return JSON.parse(localStorage.getItem('watch') || '[]'); }catch{ return []; } });
+  const [watch, setWatch] = useState<string[]>([]);
   const [lastUpdate, setLastUpdate] = useState<number|undefined>(undefined);
 
-  useEffect(()=>{ localStorage.setItem('source', source); },[source]);
-  useEffect(()=>{ localStorage.setItem('refresh', String(refreshMs)); },[refreshMs]);
-  useEffect(()=>{ localStorage.setItem('view', view); },[view]);
-  useEffect(()=>{ localStorage.setItem('watch', JSON.stringify(watch)); },[watch]);
+  useEffect(()=>{
+    try {
+      const s = (localStorage.getItem('source') as any) || 'binance';
+      const r = Number(localStorage.getItem('refresh') || 5000);
+      const v = (localStorage.getItem('view') as any) || 'grid';
+      const w = JSON.parse(localStorage.getItem('watch') || '[]');
+      setSource(s === 'coingecko' ? 'coingecko' : 'binance');
+      setRefreshMs(Number.isFinite(r) && r >= 2000 ? r : 5000);
+      setView(v === 'list' ? 'list' : 'grid');
+      if (Array.isArray(w)) setWatch(w);
+    } catch {}
+  }, []);
+
+  useEffect(()=>{ try{ localStorage.setItem('source', source); }catch{} },[source]);
+  useEffect(()=>{ try{ localStorage.setItem('refresh', String(refreshMs)); }catch{} },[refreshMs]);
+  useEffect(()=>{ try{ localStorage.setItem('view', view); }catch{} },[view]);
+  useEffect(()=>{ try{ localStorage.setItem('watch', JSON.stringify(watch)); }catch{} },[watch]);
 
   const options = useMemo(()=> ALL.map(t => {
     const value = source==='binance' ? (t.binance_symbol || '') : (t.coingecko_id || '');
