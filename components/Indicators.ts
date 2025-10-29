@@ -21,7 +21,9 @@ export function computeIndicators(prices:number[]): TokenIndicators {
   const vol30 = std(last30);
   let z30: number | undefined;
   if (last30.length>=2) {
-    const m=last30.reduce((a,b)=>a+b,0)/last30.length; const sd=std(last30)!; if(sd&&sd>0) z30=(last30[last.length-1]-m)/sd;
+    const m=last30.reduce((a,b)=>a+b,0)/last30.length;
+    const sd=std(last30)!;
+    if(sd && sd>0) z30=(last30[last30.length-1]-m)/sd;
   }
   let signal:'bullish'|'neutral'|'bearish'='neutral';
   if (ema20 && ema60 && r !== undefined) {
