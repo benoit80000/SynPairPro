@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
-
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-/**
- * Health check pour MyAiTraderBot
- * Vérifie si la clé OPENAI_API_KEY est bien chargée côté serveur
- * Usage : /api/ai/health
- */
 export async function GET() {
   const hasKey = !!process.env.OPENAI_API_KEY;
   return NextResponse.json(

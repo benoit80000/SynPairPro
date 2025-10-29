@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-/**
- * Appel minimal à OpenAI pour vérifier que la facturation et l'accès modèle fonctionnent.
- * Usage: GET /api/ai/ping
- */
 export async function GET() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ ok:false, error:'OPENAI_API_KEY manquant' }, { status:400 });
