@@ -9,7 +9,7 @@ import PairManager from "@/components/PairManager";
 import { loadTokens, TokenItem } from "@/lib/tokens";
 import { SupervisionState, superviseTokens } from "@/lib/supervision";
 import { deriveSignal } from "@/lib/indicators";
-import { TrendingUp, TrendingDown, Minus, Link as LinkIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Link as LinkIcon, RefreshCw } from "lucide-react";
 import { loadIndicators } from "@/lib/settings";
 
 type ViewMode = "compact" | "detailed";
@@ -32,6 +32,7 @@ export default function Page() {
   const [sortBy, setSortBy] = useState<SortBy>("signal");
   const [signalFilter, setSignalFilter] = useState<"all" | "buy" | "sell" | "neutral">("all");
   const [visibleInds, setVisibleInds] = useState(loadIndicators());
+  const [showAssistant, setShowAssistant] = useState(false);
   const supRef = useRef<{ stop: () => void; setInterval: (ms: number) => void; forceOnce: () => void } | null>(null);
 
   // Charge les tokens sauvegardés
@@ -80,17 +81,14 @@ export default function Page() {
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "symbol") return a.symbol.localeCompare(b.symbol);
       if (sortBy === "price") return (b.price || 0) - (a.price || 0);
-      // Tri par "force" du signal
-      const rank = (s: "buy" | "neutral" | "sell") =>
-        s === "buy" ? 3 : s === "neutral" ? 2 : 1;
+      const rank = (s: "buy" | "neutral" | "sell") => (s === "buy" ? 3 : s === "neutral" ? 2 : 1);
       return rank(b._sig as any) - rank(a._sig as any);
     });
 
     return sorted;
   }, [state, sortBy, signalFilter]);
 
-  const cols =
-    view === "compact" ? "md:grid-cols-3 xl:grid-cols-4" : "md:grid-cols-2 xl:grid-cols-3";
+  const cols = view === "compact" ? "md:grid-cols-3 xl:grid-cols-4" : "md:grid-cols-2 xl:grid-cols-3";
 
   // Ajout rapide d’une paire depuis une tuile token (A/ETH par défaut)
   function addAsPair(symbolA: string) {
@@ -101,26 +99,34 @@ export default function Page() {
       const exists = current.some((p: any) => p.a === fallback.a && p.b === fallback.b);
       const next = exists ? current : [...current, fallback];
       localStorage.setItem(KEY, JSON.stringify(next));
-      // On conserve l'event "storage" comme dans l'implémentation existante
+      // on garde 'storage' pour compat rétro + event custom pour les composants modernes
       window.dispatchEvent(new Event("storage"));
-      alert(
-        `Paire ajoutée: ${fallback.a}/${fallback.b} (modifiable dans la section “Paires synthétiques”).`
-      );
+      window.dispatchEvent(new CustomEvent("synpair:refresh"));
+      alert(`Paire ajoutée: ${fallback.a}/${fallback.b} (modifiable dans la section “Paires synthétiques”).`);
     } catch {}
   }
 
+  const triggerRefresh = () => {
+    supRef.current?.forceOnce?.();
+    window.dispatchEvent(new CustomEvent("synpair:refresh"));
+  };
+
   return (
     <main className="min-h-screen p-6">
+      {/* Styles globaux ciblés pour les checkboxes (coche visible) */}
+      <style jsx global>{`
+        input[type="checkbox"] {
+          accent-color: #60a5fa; /* bleu tailwind-ish */
+        }
+      `}</style>
+
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 className="text-3xl font-extrabold">SynPair Pro</h1>
         <div className="flex flex-wrap items-center gap-2">
           {/* Bouton global de rafraîchissement */}
           <button
-            onClick={() => {
-              supRef.current?.forceOnce?.();
-              window.dispatchEvent(new CustomEvent("synpair:refresh"));
-            }}
+            onClick={triggerRefresh}
             className="badge"
             title="Forcer un cycle de rafraîchissement maintenant"
           >
@@ -131,6 +137,15 @@ export default function Page() {
           <Link href="/help" className="badge" title="Voir la documentation">
             ❓ Aide
           </Link>
+
+          {/* Toggle Bot IA (dock visible) */}
+          <button
+            onClick={() => setShowAssistant((v) => !v)}
+            className="badge"
+            title={showAssistant ? "Masquer le bot IA" : "Afficher le bot IA"}
+          >
+            🤖 Bot IA
+          </button>
 
           <select
             className="input"
@@ -167,6 +182,21 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Dock du Bot IA */}
+      {showAssistant && (
+        <div className="fixed bottom-4 right-4 z-50 w-[min(420px,95vw)] max-h-[70vh] rounded-2xl border border-white/10 bg-black/80 backdrop-blur p-3 shadow-xl">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="font-semibold">Assistant</div>
+            <button className="badge" onClick={() => setShowAssistant(false)}>Fermer</button>
+          </div>
+          {/* Placeholder : mets ici ton composant réel s’il existe */}
+          <div className="rounded-xl border border-white/10 p-3 text-sm text-white/80">
+            Branche ici ton composant/chat IA (iframe, WebSocket, etc.).  
+            Ce panneau est volontairement très visible (z-50).
+          </div>
+        </div>
+      )}
+
       {/* Contrôles globaux : thème, source, intervalle, TF, indicateurs */}
       <Controls
         onChange={({ intervalMs }) => {
@@ -187,61 +217,31 @@ export default function Page() {
           const Icon = sig === "buy" ? TrendingUp : sig === "sell" ? TrendingDown : Minus;
 
           const inds = r.indicators || {};
-          // Construit la liste d’indicateurs en respectant les cases cochées dans Controls
           const list = [
-            // existants
-            visibleInds.includes("ema20") && inds.ema20 !== undefined
-              ? { k: "EMA20", v: inds.ema20 }
-              : null,
-            visibleInds.includes("ema60") && inds.ema60 !== undefined
-              ? { k: "EMA60", v: inds.ema60 }
-              : null,
-            visibleInds.includes("rsi14") && inds.rsi14 !== undefined
-              ? { k: "RSI14", v: inds.rsi14 }
-              : null,
+            visibleInds.includes("ema20") && inds.ema20 !== undefined ? { k: "EMA20", v: inds.ema20 } : null,
+            visibleInds.includes("ema60") && inds.ema60 !== undefined ? { k: "EMA60", v: inds.ema60 } : null,
+            visibleInds.includes("rsi14") && inds.rsi14 !== undefined ? { k: "RSI14", v: inds.rsi14 } : null,
             visibleInds.includes("bb") && inds.bollinger
               ? {
                   k: "BB(20,2)",
-                  v: `${inds.bollinger.lower?.toFixed?.(4) ?? "—"} / ${
-                    inds.bollinger.mid?.toFixed?.(4) ?? "—"
-                  } / ${inds.bollinger.upper?.toFixed?.(4) ?? "—"}`,
+                  v: `${inds.bollinger.lower?.toFixed?.(4) ?? "—"} / ${inds.bollinger.mid?.toFixed?.(4) ?? "—"} / ${
+                    inds.bollinger.upper?.toFixed?.(4) ?? "—"
+                  }`,
                 }
               : null,
-            visibleInds.includes("sigma30") && inds.sigma30 !== undefined
-              ? { k: "σ30", v: inds.sigma30 }
-              : null,
-            visibleInds.includes("z30") && inds.z30 !== undefined
-              ? { k: "Z30", v: inds.z30 }
-              : null,
+            visibleInds.includes("sigma30") && inds.sigma30 !== undefined ? { k: "σ30", v: inds.sigma30 } : null,
+            visibleInds.includes("z30") && inds.z30 !== undefined ? { k: "Z30", v: inds.z30 } : null,
 
             // nouveaux
-            visibleInds.includes("sma50") && inds.sma50 !== undefined
-              ? { k: "SMA50", v: inds.sma50 }
-              : null,
-            visibleInds.includes("sma200") && inds.sma200 !== undefined
-              ? { k: "SMA200", v: inds.sma200 }
-              : null,
-            visibleInds.includes("ema200") && inds.ema200 !== undefined
-              ? { k: "EMA200", v: inds.ema200 }
-              : null,
-            visibleInds.includes("macd") && inds.macd !== undefined
-              ? { k: "MACD", v: inds.macd }
-              : null,
-            visibleInds.includes("macdSignal") && inds.macdSignal !== undefined
-              ? { k: "MACDsig", v: inds.macdSignal }
-              : null,
-            visibleInds.includes("macdHist") && inds.macdHist !== undefined
-              ? { k: "MACDhist", v: inds.macdHist }
-              : null,
-            visibleInds.includes("atr14") && inds.atr14 !== undefined
-              ? { k: "ATR14", v: inds.atr14 }
-              : null,
-            visibleInds.includes("mfi14") && inds.mfi14 !== undefined
-              ? { k: "MFI14", v: inds.mfi14 }
-              : null,
-            visibleInds.includes("stoch14") && inds.stoch14 !== undefined
-              ? { k: "Stoch%K", v: inds.stoch14 }
-              : null,
+            visibleInds.includes("sma50") && inds.sma50 !== undefined ? { k: "SMA50", v: inds.sma50 } : null,
+            visibleInds.includes("sma200") && inds.sma200 !== undefined ? { k: "SMA200", v: inds.sma200 } : null,
+            visibleInds.includes("ema200") && inds.ema200 !== undefined ? { k: "EMA200", v: inds.ema200 } : null,
+            visibleInds.includes("macd") && inds.macd !== undefined ? { k: "MACD", v: inds.macd } : null,
+            visibleInds.includes("macdSignal") && inds.macdSignal !== undefined ? { k: "MACDsig", v: inds.macdSignal } : null,
+            visibleInds.includes("macdHist") && inds.macdHist !== undefined ? { k: "MACDhist", v: inds.macdHist } : null,
+            visibleInds.includes("atr14") && inds.atr14 !== undefined ? { k: "ATR14", v: inds.atr14 } : null,
+            visibleInds.includes("mfi14") && inds.mfi14 !== undefined ? { k: "MFI14", v: inds.mfi14 } : null,
+            visibleInds.includes("stoch14") && inds.stoch14 !== undefined ? { k: "Stoch%K", v: inds.stoch14 } : null,
           ].filter(Boolean) as { k: string; v: any }[];
 
           return (
@@ -250,12 +250,11 @@ export default function Page() {
                 <div className="text-lg font-bold">{r.symbol}</div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs opacity-60">{r.source.toUpperCase()}</span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs border border-white/10 ${color}`}
-                  >
-                    <Icon className="inline h-4 w-4 -mt-0.5 mr-1" />{" "}
-                    {sig === "buy" ? "Achat" : sig === "sell" ? "Vente" : "Neutre"}
+                  <span className={`px-2 py-0.5 rounded-full text-xs border border-white/10 ${color}`}>
+                    <Icon className="inline h-4 w-4 -mt-0.5 mr-1" /> {sig === "buy" ? "Achat" : sig === "sell" ? "Vente" : "Neutre"}
                   </span>
+
+                  {/* Bouton “Paired” */}
                   <button
                     className="badge"
                     title="Ajouter en paire (A/ETH)"
@@ -263,6 +262,16 @@ export default function Page() {
                   >
                     <LinkIcon className="inline h-4 w-4 -mt-0.5 mr-1" />
                     Paired
+                  </button>
+
+                  {/* 🔄 Bouton rafraîchir juste à côté */}
+                  <button
+                    className="badge"
+                    title="Rafraîchir cette tuile"
+                    onClick={triggerRefresh}
+                  >
+                    <RefreshCw className="inline h-4 w-4 -mt-0.5 mr-1" />
+                    Rafraîchir
                   </button>
                 </div>
               </div>
@@ -277,15 +286,11 @@ export default function Page() {
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     {list.length === 0 && (
                       <div className="col-span-2 text-white/50">
-                        Aucun indicateur sélectionné (voir “Indicateurs visibles” dans les
-                        réglages).
+                        Aucun indicateur sélectionné (voir “Indicateurs visibles” dans les réglages).
                       </div>
                     )}
                     {list.map((it, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                      >
+                      <div key={idx} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                         <div className="text-xs opacity-60">{it.k}</div>
                         <div className="font-mono">
                           {typeof it.v === "number" ? Number(it.v).toFixed(4) : String(it.v)}
@@ -295,19 +300,6 @@ export default function Page() {
                   </div>
 
                   <div className="mt-1 text-[11px] opacity-50">maj {timeAgo(r.ts)}</div>
-
-                  {/* Bouton de refresh local (facultatif) */}
-                  <div className="mt-2">
-                    <button
-                      className="btn-outline"
-                      onClick={() => {
-                        supRef.current?.forceOnce?.();
-                        window.dispatchEvent(new CustomEvent("synpair:refresh"));
-                      }}
-                    >
-                      Rafraîchir
-                    </button>
-                  </div>
                 </>
               )}
             </div>
