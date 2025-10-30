@@ -3,15 +3,31 @@
 import type { Source, TokenItem } from "@/lib/tokens";
 
 export type IndicatorPack = {
-  ema20?: number; ema60?: number; rsi14?: number;
+  // existants
+  ema20?: number;
+  ema60?: number;
+  rsi14?: number;
   bollinger?: { mid?: number; upper?: number; lower?: number };
-  sigma30?: number; z30?: number;
+  sigma30?: number;
+  z30?: number;
+
+  // ✅ nouveaux (ajoutés pour app/page.tsx)
+  sma50?: number;
+  sma200?: number;
+  ema200?: number;
+  macd?: number;
+  macdSignal?: number;
+  macdHist?: number;
+  atr14?: number;
+  mfi14?: number;
+  stoch14?: number;
 };
+
 export type SupervisionRow = {
   symbol: string;
   source: Source;
   price?: number;
-  indicators?: IndicatorPack;
+  indicators?: IndicatorPack; // ← garde ceci tel quel
   ts?: number;
   ids: Partial<TokenItem>;
   error?: string;
