@@ -19,6 +19,16 @@ export type SupervisionState = Record<string, SupervisionRow>;
 
 declare global { interface Window { __synpair__?: { tokens: SupervisionState; intervalMs: number }; } }
 
+const SRC_KEY = "global_source";
+export function getSource(): Source {
+  if (typeof window === "undefined") return "binance";
+  const s = localStorage.getItem(SRC_KEY) as Source | null;
+  return (s === "binance" || s === "coingecko" || s === "coinpaprika" || s === "coincap") ? s : "binance";
+}
+export function setSource(s: Source) {
+  if (typeof window !== "undefined") localStorage.setItem(SRC_KEY, s);
+}
+
 export function getIntervalMs(): number {
   const raw = (typeof window !== "undefined" && localStorage.getItem("poll_interval_ms")) || "5000";
   return Math.max(1000, Number(raw) || 5000);
@@ -75,10 +85,12 @@ export function superviseTokens(tokens: TokenItem[], onUpdate: (s: SupervisionSt
   let state: SupervisionState = {};
 
   tokens.forEach((t) => {
+    // Si le token ne précise pas de source, on tombe sur la source globale choisie dans Controls
+    const fallback = getSource();
     state[t.symbol.toUpperCase()] = {
       symbol: t.symbol.toUpperCase(),
-      source: (t.source || "binance"),
-      ids: { ...t },
+      source: (t.source || fallback),
+      ids: { ...t, source: (t.source || fallback) },
     };
   });
   push();
