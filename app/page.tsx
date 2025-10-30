@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link"; // ✅ ajout du lien Next.js
+import Link from "next/link";
 import Controls from "@/components/Controls";
 import TokenManager from "@/components/TokenManager";
 import PairManager from "@/components/PairManager";
@@ -62,12 +62,13 @@ export default function Page() {
   // Prépare les lignes avec le signal dérivé
   const rows = useMemo(() => {
     const list = Object.values(state).map((r) => {
+      const bb = r.indicators?.bollinger ?? undefined; // normalise null -> undefined
       const sig = deriveSignal({
         price: r.price,
         ema20: r.indicators?.ema20,
         ema60: r.indicators?.ema60,
         rsi14: r.indicators?.rsi14,
-        bb: r.indicators?.bollinger,
+        bb,
         z30: r.indicators?.z30,
       });
       return { ...r, _sig: sig };
@@ -79,6 +80,7 @@ export default function Page() {
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "symbol") return a.symbol.localeCompare(b.symbol);
       if (sortBy === "price") return (b.price || 0) - (a.price || 0);
+      // Tri par "force" du signal
       const rank = (s: "buy" | "neutral" | "sell") =>
         s === "buy" ? 3 : s === "neutral" ? 2 : 1;
       return rank(b._sig as any) - rank(a._sig as any);
@@ -99,6 +101,7 @@ export default function Page() {
       const exists = current.some((p: any) => p.a === fallback.a && p.b === fallback.b);
       const next = exists ? current : [...current, fallback];
       localStorage.setItem(KEY, JSON.stringify(next));
+      // On conserve l'event "storage" comme dans l'implémentation existante
       window.dispatchEvent(new Event("storage"));
       alert(
         `Paire ajoutée: ${fallback.a}/${fallback.b} (modifiable dans la section “Paires synthétiques”).`
@@ -112,7 +115,7 @@ export default function Page() {
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 className="text-3xl font-extrabold">SynPair Pro</h1>
         <div className="flex flex-wrap items-center gap-2">
-          {/* ✅ Bouton principal de rafraîchissement */}
+          {/* Bouton global de rafraîchissement */}
           <button
             onClick={() => {
               supRef.current?.forceOnce?.();
@@ -124,7 +127,7 @@ export default function Page() {
             🔄 Rafraîchir maintenant
           </button>
 
-          {/* ✅ Lien Aide */}
+          {/* Lien Aide */}
           <Link href="/help" className="badge" title="Voir la documentation">
             ❓ Aide
           </Link>
@@ -164,7 +167,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Contrôles globaux */}
+      {/* Contrôles globaux : thème, source, intervalle, TF, indicateurs */}
       <Controls
         onChange={({ intervalMs }) => {
           supRef.current?.setInterval(intervalMs);
@@ -184,7 +187,9 @@ export default function Page() {
           const Icon = sig === "buy" ? TrendingUp : sig === "sell" ? TrendingDown : Minus;
 
           const inds = r.indicators || {};
+          // Construit la liste d’indicateurs en respectant les cases cochées dans Controls
           const list = [
+            // existants
             visibleInds.includes("ema20") && inds.ema20 !== undefined
               ? { k: "EMA20", v: inds.ema20 }
               : null,
@@ -193,6 +198,49 @@ export default function Page() {
               : null,
             visibleInds.includes("rsi14") && inds.rsi14 !== undefined
               ? { k: "RSI14", v: inds.rsi14 }
+              : null,
+            visibleInds.includes("bb") && inds.bollinger
+              ? {
+                  k: "BB(20,2)",
+                  v: `${inds.bollinger.lower?.toFixed?.(4) ?? "—"} / ${
+                    inds.bollinger.mid?.toFixed?.(4) ?? "—"
+                  } / ${inds.bollinger.upper?.toFixed?.(4) ?? "—"}`,
+                }
+              : null,
+            visibleInds.includes("sigma30") && inds.sigma30 !== undefined
+              ? { k: "σ30", v: inds.sigma30 }
+              : null,
+            visibleInds.includes("z30") && inds.z30 !== undefined
+              ? { k: "Z30", v: inds.z30 }
+              : null,
+
+            // nouveaux
+            visibleInds.includes("sma50") && inds.sma50 !== undefined
+              ? { k: "SMA50", v: inds.sma50 }
+              : null,
+            visibleInds.includes("sma200") && inds.sma200 !== undefined
+              ? { k: "SMA200", v: inds.sma200 }
+              : null,
+            visibleInds.includes("ema200") && inds.ema200 !== undefined
+              ? { k: "EMA200", v: inds.ema200 }
+              : null,
+            visibleInds.includes("macd") && inds.macd !== undefined
+              ? { k: "MACD", v: inds.macd }
+              : null,
+            visibleInds.includes("macdSignal") && inds.macdSignal !== undefined
+              ? { k: "MACDsig", v: inds.macdSignal }
+              : null,
+            visibleInds.includes("macdHist") && inds.macdHist !== undefined
+              ? { k: "MACDhist", v: inds.macdHist }
+              : null,
+            visibleInds.includes("atr14") && inds.atr14 !== undefined
+              ? { k: "ATR14", v: inds.atr14 }
+              : null,
+            visibleInds.includes("mfi14") && inds.mfi14 !== undefined
+              ? { k: "MFI14", v: inds.mfi14 }
+              : null,
+            visibleInds.includes("stoch14") && inds.stoch14 !== undefined
+              ? { k: "Stoch%K", v: inds.stoch14 }
               : null,
           ].filter(Boolean) as { k: string; v: any }[];
 
@@ -225,10 +273,12 @@ export default function Page() {
                 <>
                   <div className="text-2xl font-mono">{r.price ?? "—"}</div>
 
+                  {/* Indicateurs sélectionnés */}
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     {list.length === 0 && (
                       <div className="col-span-2 text-white/50">
-                        Aucun indicateur sélectionné.
+                        Aucun indicateur sélectionné (voir “Indicateurs visibles” dans les
+                        réglages).
                       </div>
                     )}
                     {list.map((it, idx) => (
@@ -246,7 +296,7 @@ export default function Page() {
 
                   <div className="mt-1 text-[11px] opacity-50">maj {timeAgo(r.ts)}</div>
 
-                  {/* ✅ Bouton de refresh local (facultatif) */}
+                  {/* Bouton de refresh local (facultatif) */}
                   <div className="mt-2">
                     <button
                       className="btn-outline"
