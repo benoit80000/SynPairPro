@@ -1,149 +1,125 @@
 // lib/supervision.ts
-"use client";
-import type { Source, TokenItem } from "@/lib/tokens";
+import { IndicatorPack } from "@/lib/indicators"; // si tu as ce type ailleurs, garde-le ici
+import { getTheme as settingsGetTheme } from "@/lib/settings";
 
-export type IndicatorPack = {
-  // existants
-  ema20?: number;
-  ema60?: number;
-  rsi14?: number;
-  bollinger?: { mid?: number; upper?: number; lower?: number };
-  sigma30?: number;
-  z30?: number;
+export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
 
-  // ✅ nouveaux (ajoutés pour app/page.tsx)
-  sma50?: number;
-  sma200?: number;
-  ema200?: number;
-  macd?: number;
-  macdSignal?: number;
-  macdHist?: number;
-  atr14?: number;
-  mfi14?: number;
-  stoch14?: number;
+let _source: Source = (typeof window !== "undefined" && (localStorage.getItem("source") as Source)) || "binance";
+let _interval = (typeof window !== "undefined" && Number(localStorage.getItem("intervalMs"))) || 5000;
+
+export function getSource(): Source { return _source; }
+export function setSource(s: Source) { _source = s; if (typeof window!=="undefined") localStorage.setItem("source", s); }
+
+export function getIntervalMs(): number { return _interval; }
+export function setIntervalMs(ms: number) { _interval = ms; if (typeof window!=="undefined") localStorage.setItem("intervalMs", String(ms)); }
+
+export function toggleTheme() {
+  if (typeof window==="undefined") return;
+  const root = document.documentElement;
+  const wasLight = root.classList.contains("light");
+  root.classList.toggle("light", !wasLight);
+  localStorage.setItem("theme", !wasLight ? "light" : "dark");
+}
+export function getTheme(): "light"|"dark" {
+  if (typeof window==="undefined") return "dark";
+  return (localStorage.getItem("theme") as any) || "dark";
+}
+
+// Types supervision
+export type TokenItem = {
+  symbol: string;           // ex: "BTCUSDT" ou "eth"
+  name?: string;
+  source?: Source;          // source préférée pour ce token
+  coingecko_id?: string;    // si utilisé chez Gecko
+  binance_symbol?: string;  // si utilisé chez Binance
 };
 
-export type SupervisionRow = {
+export type Row = {
   symbol: string;
   source: Source;
   price?: number;
-  indicators?: IndicatorPack; // ← garde ceci tel quel
+  indicators?: IndicatorPack;
   ts?: number;
   ids: Partial<TokenItem>;
   error?: string;
 };
-export type SupervisionState = Record<string, SupervisionRow>;
 
-declare global { interface Window { __synpair__?: { tokens: SupervisionState; intervalMs: number }; } }
+export type SupervisionState = Record<string, Row>;
 
-const SRC_KEY = "global_source";
-export function getSource(): Source {
-  if (typeof window === "undefined") return "binance";
-  const s = localStorage.getItem(SRC_KEY) as Source | null;
-  return (s === "binance" || s === "coingecko" || s === "coinpaprika" || s === "coincap") ? s : "binance";
-}
-export function setSource(s: Source) {
-  if (typeof window !== "undefined") localStorage.setItem(SRC_KEY, s);
-}
-
-export function getIntervalMs(): number {
-  const raw = (typeof window !== "undefined" && localStorage.getItem("poll_interval_ms")) || "5000";
-  return Math.max(1000, Number(raw) || 5000);
-}
-export function setIntervalMs(ms: number) { if (typeof window !== "undefined") localStorage.setItem("poll_interval_ms", String(ms)); }
-export function loadTF(): string { if (typeof window==='undefined') return '1m'; return localStorage.getItem('tf') || '1m'; }
-
-async function fetchPack(row: SupervisionRow, tf: string) {
-  const src = row.source;
-  const idset = row.ids;
-  if (src === "binance" && idset.binance_symbol) {
-    const url = `/api/history?source=binance&id=${encodeURIComponent(idset.binance_symbol)}&interval=${encodeURIComponent(tf)}&limit=500`;
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(await r.text());
-    const j = await r.json();
-    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
-    return { price, indicators: j?.indicators, ts: Date.now() };
-  }
-  if (src === "coingecko" && idset.coingecko_id) {
-    const daysMap:any = { "1m":1,"5m":1,"1h":1,"4h":7,"1d":30,"7d":7,"30d":30 };
-    const days = daysMap[tf] || 1;
-    const url = `/api/history?source=coingecko&id=${encodeURIComponent(idset.coingecko_id)}&days=${days}`;
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(await r.text());
-    const j = await r.json();
-    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
-    return { price, indicators: j?.indicators, ts: Date.now() };
-  }
-  if (src === "coinpaprika" && idset.coinpaprika_id) {
-    const url = `/api/history?source=coinpaprika&id=${encodeURIComponent(idset.coinpaprika_id)}`;
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(await r.text());
-    const j = await r.json();
-    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
-    return { price, indicators: j?.indicators, ts: Date.now() };
-  }
-  if (src === "coincap" && idset.coincap_id) {
-    const url = `/api/history?source=coincap&id=${encodeURIComponent(idset.coincap_id)}`;
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(await r.text());
-    const j = await r.json();
-    const price = Array.isArray(j?.prices) && j.prices.length ? j.prices[j.prices.length - 1] : undefined;
-    return { price, indicators: j?.indicators, ts: Date.now() };
-  }
-  throw new Error("identifiant manquant pour la source");
-}
-
-export function superviseTokens(tokens: TokenItem[], onUpdate: (s: SupervisionState)=>void) {
+// superviseTokens: lance un polling et expose forceOnce / setInterval / stop
+export function superviseTokens(tokens: TokenItem[], onUpdate:(s:SupervisionState)=>void) {
   let disposed = false;
   let timer: any = null;
-
-  const tf = loadTF();
-  const intervalMs = getIntervalMs();
   let state: SupervisionState = {};
 
-  tokens.forEach((t) => {
-    const fallback = getSource();
-    state[t.symbol.toUpperCase()] = {
-      symbol: t.symbol.toUpperCase(),
-      source: (t.source || fallback),
-      ids: { ...t, source: (t.source || fallback) },
-    };
-  });
-  push();
+  const source = getSource();
+  const interval = getIntervalMs();
 
-  async function cycle() {
-    const entries = Object.values(state);
-    for (const row of entries) {
-      try {
-        const pack = await fetchPack(row, tf);
-        state[row.symbol] = { ...row, ...pack, error: undefined };
-      } catch (e: any) {
-        state[row.symbol] = { ...row, error: e?.message || "fetch error" };
-      }
-      if (disposed) return;
-      push();
+  async function tick(force=false) {
+    if (disposed) return;
+    try {
+      const tf = (typeof window!=="undefined" && (localStorage.getItem("tf") || "1m")) || "1m";
+      const operations = tokens.map(async (t)=>{
+        const src: Source = t.source || source;
+        const id =
+          src==="binance" ? (t.binance_symbol || t.symbol) :
+          src==="coingecko" ? (t.coingecko_id || t.symbol) :
+          t.symbol;
+
+        const url = `/api/history?id=${encodeURIComponent(id)}&source=${src}&interval=${tf}`;
+        const r = await fetch(url, { cache: "no-store" });
+        const j = await r.json();
+
+        const key = t.symbol.toUpperCase();
+        if (!r.ok || j?.error) {
+          state[key] = {
+            symbol: key,
+            source: src,
+            ids: t,
+            error: j?.error || `HTTP ${r.status}`,
+            ts: Date.now(),
+          };
+        } else {
+          const prices = j?.prices || [];
+          const price = prices.length ? prices[prices.length-1] : undefined;
+          state[key] = {
+            symbol: key,
+            source: src,
+            price,
+            indicators: j?.indicators,
+            ts: j?.ts || Date.now(),
+            ids: t,
+          };
+        }
+      });
+
+      await Promise.allSettled(operations);
+      onUpdate({ ...state });
+    } catch (e) {
+      // ignore
+    } finally {
+      if (!disposed && !force) timer = setTimeout(()=>tick(false), getIntervalMs());
     }
   }
 
-  function push() {
-    if (typeof window !== "undefined") {
-      (window as any).__synpair__ = { tokens: state, intervalMs };
-    }
-    onUpdate({ ...state });
+  function start() {
+    if (timer) clearTimeout(timer);
+    tick(true);
+  }
+  function stop() {
+    disposed = true;
+    if (timer) clearTimeout(timer);
+  }
+  function forceOnce() {
+    if (timer) clearTimeout(timer);
+    tick(true);
+  }
+  function setIntervalPublic(ms:number) {
+    setIntervalMs(ms);
+    if (timer) { clearTimeout(timer); timer = setTimeout(()=>tick(false), ms); }
   }
 
-  function startLoop() {
-    clearTimer();
-    timer = setInterval(cycle, intervalMs);
-    cycle().catch(() => {});
-  }
-  function clearTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  start();
 
-  startLoop();
-
-  return {
-    stop() { disposed = true; clearTimer(); },
-    forceOnce() { cycle().catch(()=>{}); },
-    setInterval(ms: number) { setIntervalMs(ms); clearTimer(); timer = setInterval(cycle, ms); }
-  };
+  return { stop, forceOnce, setInterval: setIntervalPublic };
 }
