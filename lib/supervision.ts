@@ -1,3 +1,4 @@
+// lib/supervision.ts
 "use client";
 import type { Source, TokenItem } from "@/lib/tokens";
 
@@ -85,7 +86,6 @@ export function superviseTokens(tokens: TokenItem[], onUpdate: (s: SupervisionSt
   let state: SupervisionState = {};
 
   tokens.forEach((t) => {
-    // Si le token ne précise pas de source, on tombe sur la source globale choisie dans Controls
     const fallback = getSource();
     state[t.symbol.toUpperCase()] = {
       symbol: t.symbol.toUpperCase(),
