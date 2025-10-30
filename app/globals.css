@@ -3,13 +3,14 @@
 @tailwind utilities;
 
 :root { color-scheme: dark; }
-body { @apply bg-[#0b0e14] text-white; font-feature-settings: "ss02" on, "cv02" on; }
+html.light { color-scheme: light; }
+body { @apply bg-[#0b0e14] text-white transition-colors; font-feature-settings: "ss02" on, "cv02" on; }
+html.light body { @apply bg-white text-black; }
 
-.input { @apply rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none placeholder-white/40 transition focus:border-brandB/60; }
+.input { @apply rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.04] dark:bg-white/5 px-3 py-2 outline-none placeholder-black/40 dark:placeholder-white/40 transition focus:border-brandB/60; }
 .button { @apply rounded-xl bg-gradient-to-r from-brandA to-brandB px-4 py-2 font-semibold text-black shadow shadow-brandA/30 hover:shadow-glow transition; }
-.badge  { @apply rounded-xl border border-white/10 bg-white/10 px-3 py-1; }
-.card   { @apply rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur shadow-sm; }
+.badge  { @apply rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.06] dark:bg-white/10 px-3 py-1; }
+.card   { @apply rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/[0.06] p-4 backdrop-blur shadow-sm; }
 
-/* Skeleton */
-.skeleton { @apply animate-pulse rounded-xl bg-white/10; height: 1rem; }
+.skeleton { @apply animate-pulse rounded-xl bg-black/10 dark:bg-white/10; height: 1rem; }
 .skeleton-lg { height: 2rem; }

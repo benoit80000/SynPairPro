@@ -1,22 +1,22 @@
+export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
 export interface TokenItem {
   symbol: string;
   name: string;
-  binance_symbol: string;
+  source?: Source;  // preferred source
+  binance_symbol?: string;
   coingecko_id?: string;
   coinpaprika_id?: string;
   coincap_id?: string;
 }
-const DEFAULT_TOKENS: TokenItem[] = [
-  { symbol: "BTC", name: "Bitcoin", binance_symbol: "BTCUSDT", coincap_id: "bitcoin", coinpaprika_id: "btc-bitcoin", coingecko_id: "bitcoin" },
-  { symbol: "ETH", name: "Ethereum", binance_symbol: "ETHUSDT", coincap_id: "ethereum", coinpaprika_id: "eth-ethereum", coingecko_id: "ethereum" },
-  { symbol: "LINK", name: "Chainlink", binance_symbol: "LINKUSDT", coincap_id: "chainlink", coinpaprika_id: "link-chainlink", coingecko_id: "chainlink" },
+const DEFAULT: TokenItem[] = [
+  { symbol: "BTC", name: "Bitcoin", source:"binance", binance_symbol:"BTCUSDT", coingecko_id:"bitcoin", coinpaprika_id:"btc-bitcoin", coincap_id:"bitcoin" },
+  { symbol: "ETH", name: "Ethereum", source:"binance", binance_symbol:"ETHUSDT", coingecko_id:"ethereum", coinpaprika_id:"eth-ethereum", coincap_id:"ethereum" },
+  { symbol: "LINK", name: "Chainlink", source:"binance", binance_symbol:"LINKUSDT", coingecko_id:"chainlink", coinpaprika_id:"link-chainlink", coincap_id:"chainlink" },
 ];
-const STORAGE_KEY = "synpair_tokens";
+const KEY = "synpair_tokens_v2";
 export function loadTokens(): TokenItem[] {
-  if (typeof window === "undefined") return DEFAULT_TOKENS;
-  try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : DEFAULT_TOKENS; } catch { return DEFAULT_TOKENS; }
+  if (typeof window === 'undefined') return DEFAULT;
+  try { const s = localStorage.getItem(KEY); return s? JSON.parse(s): DEFAULT; } catch { return DEFAULT; }
 }
-export function saveTokens(tokens: TokenItem[]) {
-  if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
-}
-export function resetTokens() { if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY); }
+export function saveTokens(t: TokenItem[]){ if (typeof window!=='undefined') localStorage.setItem(KEY, JSON.stringify(t)); }
+export function resetTokens(){ if (typeof window!=='undefined') localStorage.removeItem(KEY); }

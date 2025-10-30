@@ -10,12 +10,13 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const source = (searchParams.get('source') || 'binance') as 'binance'|'coingecko'|'coinpaprika'|'coincap';
   const id = searchParams.get('id');
+  const tf = searchParams.get('interval') || '1m';
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
   try {
     let prices: number[] = [];
     if (source === 'binance') {
-      const interval = searchParams.get('interval') || '1m';
-      const limit = Math.min(Number(searchParams.get('limit') || '180'), 1000);
+      const interval = tf;
+      const limit = Math.min(Number(searchParams.get('limit') || '500'), 1000);
       const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(id)}&interval=${interval}&limit=${limit}`;
       const r = await fetch(url, { cache: 'no-store' });
       if (!r.ok) throw new Error(await r.text());
