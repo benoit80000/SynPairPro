@@ -12,7 +12,6 @@ export type IndicatorPack = {
   z30?: number;
 
   // ✅ nouveaux (ajoutés pour app/page.tsx)
-  sma50?: number;
   sma200?: number;
   ema200?: number;
   macd?: number;
