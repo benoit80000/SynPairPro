@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link"; // ✅ ajout du lien Next.js
 import Controls from "@/components/Controls";
 import TokenManager from "@/components/TokenManager";
 import PairManager from "@/components/PairManager";
@@ -78,7 +79,6 @@ export default function Page() {
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "symbol") return a.symbol.localeCompare(b.symbol);
       if (sortBy === "price") return (b.price || 0) - (a.price || 0);
-      // Tri par "force" du signal
       const rank = (s: "buy" | "neutral" | "sell") =>
         s === "buy" ? 3 : s === "neutral" ? 2 : 1;
       return rank(b._sig as any) - rank(a._sig as any);
@@ -112,13 +112,22 @@ export default function Page() {
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 className="text-3xl font-extrabold">SynPair Pro</h1>
         <div className="flex flex-wrap items-center gap-2">
+          {/* ✅ Bouton principal de rafraîchissement */}
           <button
-            onClick={() => supRef.current?.forceOnce?.()}
+            onClick={() => {
+              supRef.current?.forceOnce?.();
+              window.dispatchEvent(new CustomEvent("synpair:refresh"));
+            }}
             className="badge"
             title="Forcer un cycle de rafraîchissement maintenant"
           >
             🔄 Rafraîchir maintenant
           </button>
+
+          {/* ✅ Lien Aide */}
+          <Link href="/help" className="badge" title="Voir la documentation">
+            ❓ Aide
+          </Link>
 
           <select
             className="input"
@@ -155,7 +164,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Contrôles globaux : thème, source, intervalle, TF, indicateurs */}
+      {/* Contrôles globaux */}
       <Controls
         onChange={({ intervalMs }) => {
           supRef.current?.setInterval(intervalMs);
@@ -175,9 +184,7 @@ export default function Page() {
           const Icon = sig === "buy" ? TrendingUp : sig === "sell" ? TrendingDown : Minus;
 
           const inds = r.indicators || {};
-          // Construit la liste d’indicateurs en respectant les cases cochées dans Controls
           const list = [
-            // existants
             visibleInds.includes("ema20") && inds.ema20 !== undefined
               ? { k: "EMA20", v: inds.ema20 }
               : null,
@@ -186,49 +193,6 @@ export default function Page() {
               : null,
             visibleInds.includes("rsi14") && inds.rsi14 !== undefined
               ? { k: "RSI14", v: inds.rsi14 }
-              : null,
-            visibleInds.includes("bb") && inds.bollinger
-              ? {
-                  k: "BB(20,2)",
-                  v: `${inds.bollinger.lower?.toFixed?.(4) ?? "—"} / ${
-                    inds.bollinger.mid?.toFixed?.(4) ?? "—"
-                  } / ${inds.bollinger.upper?.toFixed?.(4) ?? "—"}`,
-                }
-              : null,
-            visibleInds.includes("sigma30") && inds.sigma30 !== undefined
-              ? { k: "σ30", v: inds.sigma30 }
-              : null,
-            visibleInds.includes("z30") && inds.z30 !== undefined
-              ? { k: "Z30", v: inds.z30 }
-              : null,
-
-            // nouveaux
-            visibleInds.includes("sma50") && inds.sma50 !== undefined
-              ? { k: "SMA50", v: inds.sma50 }
-              : null,
-            visibleInds.includes("sma200") && inds.sma200 !== undefined
-              ? { k: "SMA200", v: inds.sma200 }
-              : null,
-            visibleInds.includes("ema200") && inds.ema200 !== undefined
-              ? { k: "EMA200", v: inds.ema200 }
-              : null,
-            visibleInds.includes("macd") && inds.macd !== undefined
-              ? { k: "MACD", v: inds.macd }
-              : null,
-            visibleInds.includes("macdSignal") && inds.macdSignal !== undefined
-              ? { k: "MACDsig", v: inds.macdSignal }
-              : null,
-            visibleInds.includes("macdHist") && inds.macdHist !== undefined
-              ? { k: "MACDhist", v: inds.macdHist }
-              : null,
-            visibleInds.includes("atr14") && inds.atr14 !== undefined
-              ? { k: "ATR14", v: inds.atr14 }
-              : null,
-            visibleInds.includes("mfi14") && inds.mfi14 !== undefined
-              ? { k: "MFI14", v: inds.mfi14 }
-              : null,
-            visibleInds.includes("stoch14") && inds.stoch14 !== undefined
-              ? { k: "Stoch%K", v: inds.stoch14 }
               : null,
           ].filter(Boolean) as { k: string; v: any }[];
 
@@ -261,12 +225,10 @@ export default function Page() {
                 <>
                   <div className="text-2xl font-mono">{r.price ?? "—"}</div>
 
-                  {/* Indicateurs sélectionnés */}
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     {list.length === 0 && (
                       <div className="col-span-2 text-white/50">
-                        Aucun indicateur sélectionné (voir “Indicateurs visibles” dans les
-                        réglages).
+                        Aucun indicateur sélectionné.
                       </div>
                     )}
                     {list.map((it, idx) => (
@@ -283,6 +245,19 @@ export default function Page() {
                   </div>
 
                   <div className="mt-1 text-[11px] opacity-50">maj {timeAgo(r.ts)}</div>
+
+                  {/* ✅ Bouton de refresh local (facultatif) */}
+                  <div className="mt-2">
+                    <button
+                      className="btn-outline"
+                      onClick={() => {
+                        supRef.current?.forceOnce?.();
+                        window.dispatchEvent(new CustomEvent("synpair:refresh"));
+                      }}
+                    >
+                      Rafraîchir
+                    </button>
+                  </div>
                 </>
               )}
             </div>
