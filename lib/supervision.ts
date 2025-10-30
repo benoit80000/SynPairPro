@@ -36,8 +36,6 @@ export type SupervisionRow = {
 export type SupervisionState = Record<string, SupervisionRow>;
 import { getTheme as settingsGetTheme } from "@/lib/settings";
 
-export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
-
 let _source: Source = (typeof window !== "undefined" && (localStorage.getItem("source") as Source)) || "binance";
 let _interval = (typeof window !== "undefined" && Number(localStorage.getItem("intervalMs"))) || 5000;
 
