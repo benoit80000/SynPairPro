@@ -1,5 +1,39 @@
 // lib/supervision.ts
-import { IndicatorPack } from "@/lib/indicators"; // si tu as ce type ailleurs, garde-le ici
+export type IndicatorPack = {
+  ema20?: number;
+  ema60?: number;
+  rsi14?: number;
+  bollinger?: {
+    lower?: number;
+    mid?: number;
+    upper?: number;
+  } | null;
+  sigma30?: number; // σ30
+  z30?: number;     // Z-score 30
+  sma50?: number;
+  sma200?: number;
+  ema200?: number;
+  macd?: number;
+  macdSignal?: number;
+  macdHist?: number;
+  atr14?: number;
+  mfi14?: number;
+  stoch14?: number; // Stoch %K
+};
+
+// (optionnel mais utile pour la lisibilité – adapte si déjà présent)
+export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
+
+export type SupervisionRow = {
+  symbol: string;
+  source: Source;
+  price?: number;
+  ts?: number;
+  indicators?: IndicatorPack;
+  error?: string;
+};
+
+export type SupervisionState = Record<string, SupervisionRow>;
 import { getTheme as settingsGetTheme } from "@/lib/settings";
 
 export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
