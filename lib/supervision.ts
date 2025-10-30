@@ -24,16 +24,6 @@ export type IndicatorPack = {
 // (optionnel mais utile pour la lisibilité – adapte si déjà présent)
 export type Source = "binance" | "coingecko" | "coinpaprika" | "coincap";
 
-export type SupervisionRow = {
-  symbol: string;
-  source: Source;
-  price?: number;
-  ts?: number;
-  indicators?: IndicatorPack;
-  error?: string;
-};
-
-export type SupervisionState = Record<string, SupervisionRow>;
 import { getTheme as settingsGetTheme } from "@/lib/settings";
 
 let _source: Source = (typeof window !== "undefined" && (localStorage.getItem("source") as Source)) || "binance";
